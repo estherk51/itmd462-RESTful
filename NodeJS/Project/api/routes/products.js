@@ -5,16 +5,40 @@ const router = express.Router();
 const Product = require('../models/product_model');
 
 router.get('/', (req, res, next) => {
-    res.status(200).json({
-        message: 'Handling GET requests to /products'
-    });
+    Product.find()
+        // .select('_id name price')
+        .select('-__v')
+        .exec()
+        .then(docs => {
+            const response = {
+                count: docs.length,
+                products: docs.map(doc => {
+                    return {
+                        product: doc,
+                        request: {
+                            type: "GET",
+                            url: "http://localhost:4000/products/" + doc._id
+                        }
+                    }
+                })
+            }
+            // if (docs.length < 0) {
+            res.status(200).json(response);
+            /* } else {
+                res.status(404).json({
+                    message: 'No entries found'
+                });
+            } */
+        })
+        .catch(err =>{
+            console.log(err);
+            res.status(500).json({
+                error: err
+            });
+        });
 });
 
 router.post('/', (req, res, next) => {
-    // const product = {
-    //     name: req.body.name,
-    //     price: req.body.price
-    // };
     const product = new Product({
         _id: new mongoose.Types.ObjectId(),
         name: req.body.name,
@@ -23,50 +47,79 @@ router.post('/', (req, res, next) => {
     product
         .save()
         .then(result => {
-            console.log(result)
+            res.status(201).json({
+                message: 'Created product successfully',
+                createdProduct: {
+                    name: result.name,
+                    price: result.price,
+                    _id: result._id
+                },
+                request: {
+                    type: "GET",
+                    url: "http://localhost:4000/products/" + result._id
+                }
+            });
         })
-        .catch(err => console.log(err));
-    res.status(201).json({ // 201 Created
-        message: 'Handling POST requests to /products',
-        createdProduct: product
-    });
+        .catch(err => {
+            console.log(err);
+            res.status(500).json({
+                error: err
+            });
+        });
 });
 
 router.get('/:productID', (req, res, next) => {
     const id = req.params.productID;
     Product.findById(id)
+        .select('-__v')
         .exec()
         .then(doc => {
-            console.log("From DB:", doc);
-            res.status(200).json(doc);
+            res.status(200).json({
+                product: doc,
+                request: {
+                    type: 'GET',
+                    description: 'Get all products',
+                    url: 'http://localhost:4000/products'
+                }
+            });
         })
         .catch(err => {
             console.log(err);
             res.status(500).json({error: err});
         });
-    // if (id === 'special') {
-    //     res.status(200).json({
-    //         message: 'You discovered the special ID',
-    //         id: id
-    //     });
-    // } else {
-    //     res.status(200).json({
-    //         message: 'You passed a normal ID',
-    //         id: id
-    //     });
-    // };
 });
 
 router.patch('/:productID', (req, res, next) => {
-    res.status(200).json({
-        message: 'Updated product'
-    });
+    const id = req.params.productID;
+    const updateOps = {};
+    for (const ops of req.body) {
+        updateOps[ops.propName] = ops.value;
+    };
+    Product.update({_id: id}, {$set: updateOps})
+        .exec()
+        .then(result => {
+            console.log(result);
+            res.status(200).json(result);
+        })
+        .catch(err => {
+            console.log(err);
+            res.status(500).json({error: err});
+        });
 });
 
 router.delete('/:productID', (req, res, next) => {
-    res.status(200).json({
-        message: 'Deleted product'
-    });
+    const id = req.params.productID;
+    Product.remove({_id: id})
+        .exec()
+        .then(result => {
+            res.status(200).json(result);
+        })
+        .catch(err => {
+            console.log(err);
+            res.status(500).json({
+                error: err
+            })
+        });
 });
 
 module.exports = router;
