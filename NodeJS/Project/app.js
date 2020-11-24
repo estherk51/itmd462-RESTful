@@ -33,6 +33,12 @@ app.use((req, res, next) => {
         next();
 });
 
+app.use(express.static(__dirname));
+console.log("This is the directory listed in __dirname " + __dirname);
+app.use('/styles', express.static(__dirname));
+app.use('/images', express.static(__dirname + '/images'));
+app.use('/scripts', express.static(__dirname + '/scripts'));
+
 app.use('/products', productRoutes);
 app.use('/orders', orderRoutes);
 app.use('/users', userRoutes);

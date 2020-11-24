@@ -95,11 +95,16 @@ router.patch('/:productID', (req, res, next) => {
     for (const ops of req.body) {
         updateOps[ops.propName] = ops.value;
     };
-    Product.update({_id: id}, {$set: updateOps})
+    Product.updateOne({_id: id}, {$set: updateOps})
         .exec()
         .then(result => {
-            console.log(result);
-            res.status(200).json(result);
+            res.status(200).json({
+                message: 'Product updated',
+                request: {
+                    type: 'GET',
+                    url: 'http://localhost:3000/products' + id // not _id because of the parameter on line 98
+                }
+            });
         })
         .catch(err => {
             console.log(err);
@@ -109,10 +114,17 @@ router.patch('/:productID', (req, res, next) => {
 
 router.delete('/:productID', (req, res, next) => {
     const id = req.params.productID;
-    Product.remove({_id: id})
+    Product.deleteOne({_id: id})
         .exec()
         .then(result => {
-            res.status(200).json(result);
+            res.status(200).json({
+                message: 'Product deleted',
+                request: {
+                    type: 'POST',
+                    url: 'http://localhost:4000/proudcts',
+                    body: { name: 'String', price: 'Number'}
+                }
+            });
         })
         .catch(err => {
             console.log(err);
